@@ -1,9 +1,8 @@
 import tkinter as tk
 from tkinter import messagebox
 import sqlite3
-from fpdf import FPDF
+from fpdf import FPDF,HTMLMixin
 from pathlib import Path
-from tkinter import tkentrycomplete
 my_file = Path("test2.db")
 if my_file.exists():
     print("db")
@@ -56,21 +55,78 @@ class windowclass():
         da = 0
         self.vard = []
         self.vars=[]
+        
+        self.punches_list = []
+        self.my_label = tk.Label(master,text="Search Dishes")
+        self.my_label.grid(row=6,column=0)
+        self.my_entry = tk.Entry(master)
+        self.my_entry.grid(row=6,column=1)
+
+        self.my_list = tk.Listbox(master)
+        self.my_list.grid(row=7,column=0,columnspan=2)
+
+        self.my_label = tk.Label(master,text="Selected Data")
+        self.my_label.grid(row=8,column=0)
+
+        self.data_show = tk.Entry(master)
+        self.data_show.grid(row=8,column=1)
+
+        self.toppings=[]
+
         for record in self.records:
-            j=j+1
-            self.vars.append(tk.StringVar())
-            self.var = tk.StringVar(value=record[0])
-            self.vars[-1].set(0)
-            print(self.vars[-1].set(0))
-            d = self.vars[-1]
-            # c = Checkbutton(root, text=record[0], variable=var, command=lambda i=record[1]:printSelection(i,vars[-1].get()), onvalue=1, offvalue=0)
+            self.toppings.append(record[0])
+        self.update(self.toppings)
+        
+        self.my_list.bind("<<ListboxSelect>>",self.fillout)
+
+        self.my_entry.bind("<KeyRelease>",self.check)
+        # for record in self.records:
+        #     j=j+1
+        #     self.vars.append(tk.StringVar())
+        #     self.var = tk.StringVar(value=record[0])
+        #     self.vars[-1].set(0)
+        #     print(self.vars[-1].set(0))
+        #     d = self.vars[-1]
+        #     # c = Checkbutton(root, text=record[0], variable=var, command=lambda i=record[1]:printSelection(i,vars[-1].get()), onvalue=1, offvalue=0)
             
-            c = tk.Checkbutton(master, text=record[0], variable=self.var, onvalue=1, offvalue=0)
-            c.grid(row=j+2,column=0)
-            self.vard.append(self.var)
+        #     c = tk.Checkbutton(master, text=record[0], variable=self.var, onvalue=1, offvalue=0)
+        #     c.grid(row=j+2,column=0)
+        #     self.vard.append(self.var)
 
         self.printbtn = tk.Button(master, text="Save PDF", command=self.print)
-        self.printbtn.grid(row=j+3,column=1,  sticky=tk.W+tk.E)
+        self.printbtn.grid(row=10,column=1,  sticky=tk.W+tk.E)
+    
+    def fillout(self,e):
+        self.my_entry.delete(0,tk.END)
+        if(self.my_list.get(tk.ANCHOR)+"," in self.punches_list):
+            pass
+        else:
+            self.punches_list.append(self.my_list.get(tk.ANCHOR)+",")
+
+            self.data_show.delete(0, tk.END)
+            for i in self.punches_list:
+                self.data_show.insert(tk.END, i)
+                
+            # self.my_entry.insert(0,self.my_list.get(ANCHOR))
+            self.toppings.remove(self.my_list.get(tk.ANCHOR))
+
+    def update(self,data):
+        
+        self.my_list.delete(0,tk.END)
+        for item in data:
+            self.my_list.insert(tk.END,item)
+
+    def check(self,e):
+        typed = self.my_entry.get()
+        if typed =="":
+            data = self.toppings
+        else:
+            data = []
+            for item in self.toppings:
+                if typed.lower() in item.lower():
+                    data.append(item)
+
+        self.update(data)
 
     def command(self):
         self.master.withdraw()
@@ -82,21 +138,27 @@ class windowclass():
         self.master.destroy()
 
     def print(self):
-        result = [var.get() for var in self.vard if var.get()]
-        j=0
-        k=0
+        # result = [var.get() for var in self.vard if var.get()]
         oid_data = []
         oid_data.append(("","",""))
         oid_data.append(("","",""))
         oid_data.append(("","",""))
         oid_data.append(("","",""))
         oid_data.append(("Sr.No","Product", "Ingredients"))
-        for i in self.vard:
-            j=j+1
-            if(i.get()=="1"):
-                k=k+1
-                print(self.records[j-1])
-                oid_data.append((str(k),self.records[j-1][0],self.records[j-1][1]))
+        k=0
+        for i in range(len(self.punches_list)):
+            k=k+1
+            for j in self.records:
+                
+                if(self.punches_list[i].replace(",","")==j[0]):
+                    oid_data.append((str(k),j[0],j[1]))
+       
+        # for i in self.vard:
+        #     j=j+1
+        #     if(i.get()=="1"):
+        #         k=k+1
+        #         print(self.records[j-1])
+        #         oid_data.append((str(k),self.records[j-1][0],self.records[j-1][1]))
         pdf = FPDF()
         pdf.add_page()
         pdf.set_font("Times", size=10)
@@ -136,11 +198,19 @@ class windowclass():
             elif j==3:
                 pdf.cell(col_width, line_height,align='L', txt="Port of discharge: "+str(self.port_discharge.get()), border=0)
             else:
-                for datum in row:
+                for datum in range(len(row)):
                     print(datum)
+                    
                     line_height = lh_list[j]
                     #choose right height for current row
-                    pdf.multi_cell(col_width, line_height, datum, border=1,align='L',ln=3, 
+                    if(datum==0):
+                        pdf.multi_cell(col_width-50, line_height, row[datum], border=1,align='L',ln=3, 
+                    max_line_height=pdf.font_size)
+                    elif (datum==1):
+                        pdf.multi_cell(col_width-20, line_height, row[datum], border=1,align='L',ln=3, 
+                    max_line_height=pdf.font_size)
+                    else:
+                        pdf.multi_cell(col_width+70, line_height, row[datum], border=1,align='L',ln=3, 
                     max_line_height=pdf.font_size)
             pdf.ln(line_height)
 
@@ -206,7 +276,7 @@ class Demo2:
 root = tk.Tk()
 root.title("window")
 
-root.geometry("350x350")
+root.geometry("450x550")
 cls = windowclass(root)
 root.eval('tk::PlaceWindow . center')
 root.mainloop()
