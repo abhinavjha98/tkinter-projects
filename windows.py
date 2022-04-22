@@ -3,6 +3,7 @@ from tkinter import messagebox
 import sqlite3
 from fpdf import FPDF,HTMLMixin
 from pathlib import Path
+import time
 my_file = Path("test2.db")
 if my_file.exists():
     print("db")
@@ -24,27 +25,27 @@ class windowclass():
         c = conn.cursor()
         self.master = master
         self.addbtn = tk.Button(master, text="Add Data", command=self.command)
-        self.addbtn.grid(row=1,column=1,  sticky=tk.W+tk.E)
+        self.addbtn.grid(row=1,column=1,  sticky=tk.W+tk.E,pady=10)
         self.quitbtn = tk.Button(master, text="Quit", command=self.quit)
         self.quitbtn.grid(row=1,column=2)
-        self.container_no_label = tk.Label(master,text="Enter Container no")
+        self.container_no_label = tk.Label(master,text="Enter Container no",pady=5,padx=10)
         self.container_no_label.grid(row=2,column=0)
-        self.container_no = tk.Entry(master,width=10)
+        self.container_no = tk.Entry(master,width=20)
         self.container_no.grid(row=2,column=1)
 
-        self.invoice_label = tk.Label(master,text="Enter Invoice no")
+        self.invoice_label = tk.Label(master,text="Enter Invoice no",pady=5)
         self.invoice_label.grid(row=3,column=0)
-        self.invoice = tk.Entry(master,width=10)
+        self.invoice = tk.Entry(master,width=20)
         self.invoice.grid(row=3,column=1)
 
-        self.date_label = tk.Label(master,text="Enter Date")
+        self.date_label = tk.Label(master,text="Enter Date",pady=5)
         self.date_label.grid(row=4,column=0)
-        self.date = tk.Entry(master,width=10)
+        self.date = tk.Entry(master,width=20)
         self.date.grid(row=4,column=1)
 
-        self.port_discharge_label = tk.Label(master,text="Enter port of discharge")
+        self.port_discharge_label = tk.Label(master,text="Enter port of discharge",padx=10,pady=5)
         self.port_discharge_label.grid(row=5,column=0)
-        self.port_discharge = tk.Entry(master,width=10)
+        self.port_discharge = tk.Entry(master,width=20)
         self.port_discharge.grid(row=5,column=1)
 
         c.execute("SELECT *,oid FROM dish")
@@ -63,7 +64,7 @@ class windowclass():
         self.my_entry.grid(row=6,column=1)
 
         self.my_list = tk.Listbox(master)
-        self.my_list.grid(row=7,column=0,columnspan=2)
+        self.my_list.grid(row=7,column=1,pady=10)
 
         self.my_label = tk.Label(master,text="Selected Data")
         self.my_label.grid(row=8,column=0)
@@ -131,7 +132,7 @@ class windowclass():
     def command(self):
         self.master.withdraw()
         toplevel = tk.Toplevel(self.master)
-        toplevel.geometry("800x400")
+        toplevel.geometry("600x300")
         app = Demo2(toplevel)
 
     def quit(self):
@@ -166,7 +167,6 @@ class windowclass():
         # pdf.set_text_color(220, 50, 50)
         # pdf.cell(w=210.0, h=40.0, align='C', txt="LORD OF THE PDFS", border=0)
         line_height = pdf.font_size * 2.5
-        print(pdf.epw)
         col_width = pdf.epw / 3
 
         lh_list = []
@@ -214,7 +214,7 @@ class windowclass():
                     max_line_height=pdf.font_size)
             pdf.ln(line_height)
 
-        pdf.output('table_with_cells.pdf')
+        pdf.output(str(self.invoice.get())+'.pdf')
         message = messagebox.askyesno("Disk Reciepe","Are you want to create more")
         print(message)
         if message ==False:
@@ -245,6 +245,12 @@ class Demo2:
 
         back_button = tk.Button(self.frame,text="Back to screen",command=self.close_windows)
         back_button.grid(row=7,column=1,pady=10,padx=10)
+
+        edit_button = tk.Button(self.frame,text="Edit records",command=self.update_windows)
+        edit_button.grid(row=8,column=0,pady=10,padx=10)
+
+        delete_button = tk.Button(self.frame,text="Delete records",command=self.delete_windows)
+        delete_button.grid(row=8,column=1,pady=10,padx=10)
         self.frame.pack()
 
     def submit(self,add_dish,add_description):
@@ -270,9 +276,203 @@ class Demo2:
         # self.master.destroy()
         self.master.withdraw()
         toplevel = tk.Toplevel(self.master)
-        toplevel.geometry("350x350")
+        toplevel.geometry("450x550")
         app = windowclass(toplevel)
 
+    def delete_windows(self):
+        # self.master.destroy()
+        self.master.withdraw()
+        toplevel = tk.Toplevel(self.master)
+        toplevel.geometry("450x550")
+        app = Delete(toplevel)
+
+    def update_windows(self):
+        # self.master.destroy()
+        self.master.withdraw()
+        toplevel = tk.Toplevel(self.master)
+        toplevel.geometry("550x550")
+        app = Update(toplevel)
+
+class Delete:
+    def __init__(self, master):
+        self.master = master
+        self.frame = tk.Frame(self.master)
+        query_label = tk.Label(self.frame,text="Records in DB")
+        query_label.grid(row=0,column=0)
+        conn = sqlite3.connect("test2.db")
+        c = conn.cursor()
+        c.execute("SELECT *,oid FROM dish")
+        self.showRecord = c.fetchall()
+        print(self.showRecord)
+        print_records = ''
+        k=0
+        for record in self.showRecord:
+            k=k+1
+            print_records += str(record[0]) +" "+str(record[2])  +"\n"
+
+        self.query_label = tk.Label(self.frame,text=print_records)
+        self.query_label.grid(row=0,column=1,pady=10)
+        self.delete_label = tk.Label(self.frame,text="Enter ID of dish to be deleted")
+        self.delete_label.grid(row=k+1,column=0)
+        self.delete_box = tk.Entry(self.frame,width=20)
+        self.delete_box.grid(row=k+1,column=1)
+        self.show_records_button = tk.Button(self.frame,text="Delete records",command=self.deleteRecords)
+        self.show_records_button.grid(row=k+2,column=0,pady=10)
+        back_button = tk.Button(self.frame,text="Back to screen",command=self.close_windows)
+        back_button.grid(row=k+2,column=1,pady=10)
+        conn.commit()
+        conn.close()
+        self.frame.pack()
+
+    def deleteRecords(self):
+        conn = sqlite3.connect("test2.db")
+        c = conn.cursor()
+        c.execute("DELETE FROM dish WHERE oid="+self.delete_box.get())
+        self.delete_box.delete(0,tk.END)
+        conn.commit()
+        conn.close()
+        message = messagebox.askyesno("Delete record","Are you want to delete more")
+        print(message)
+        if message ==False:
+            self.close_windows()
+        else:
+            self.showRecords()
+        # self.master.withdraw()
+        # toplevel = tk.Toplevel(self.master)
+        # toplevel.geometry("450x550")
+        # app = Delete(toplevel)
+    def close_windows(self):
+        # self.master.destroy()
+        self.master.withdraw()
+        toplevel = tk.Toplevel(self.master)
+        toplevel.geometry("600x300")
+        app = Demo2(toplevel)
+
+        
+
+    def showRecords(self):
+        conn = sqlite3.connect("test2.db")
+        c = conn.cursor()
+        c.execute("SELECT *,oid FROM dish")
+        self.showRecord = c.fetchall()
+        print(self.showRecord)
+        print_records = ''
+        k=0
+        for record in self.showRecord:
+            k=k+1
+            print_records += str(record[0]) +" "+str(record[2])  +"\n"
+
+        self.query_label = tk.Label(self.frame,text=print_records)
+        self.query_label.grid(row=1,column=0)
+
+class Update():
+    def __init__(self, master):
+        self.master = master
+        self.frame = tk.Frame(self.master)
+        query_label = tk.Label(self.frame,text="Records in DB")
+        query_label.grid(row=0,column=0)
+        conn = sqlite3.connect("test2.db")
+        c = conn.cursor()
+        c.execute("SELECT *,oid FROM dish")
+        self.showRecord = c.fetchall()
+        print_records = ''
+        self.k=0
+        for record in self.showRecord:
+            self.k=self.k+1
+            print_records += str(record[0]) +" "+str(record[2])  +"\n"
+
+        self.query_label = tk.Label(self.frame,text=print_records)
+        self.query_label.grid(row=0,column=1,pady=10)
+        self.delete_label = tk.Label(self.frame,text="Enter ID of dish to be update")
+        self.delete_label.grid(row=self.k+1,column=0)
+        self.delete_box = tk.Entry(self.frame,width=20)
+        self.delete_box.grid(row=self.k+1,column=1)
+        self.show_records_button = tk.Button(self.frame,text="Check records",command=self.updateRecords)
+        self.show_records_button.grid(row=self.k+2,column=0,pady=10)
+        conn.commit()
+        conn.close()
+        self.frame.pack()
+
+    def updateRecords(self):
+        self.add_dish_label = tk.Label(self.frame,text="Dish Name")
+        self.add_dish_label.grid(row=self.k+3,column=0)
+
+        self.add_description_label = tk.Label(self.frame,text="Dish description")
+        self.add_description_label.grid(row=self.k+4,column=0)
+
+        self.add_dish = tk.Entry(self.frame,width=30)
+        self.add_dish.grid(row=self.k+3,column=1,pady=20)
+
+        self.add_description = tk.Text(self.frame, height = 5, width = 40)
+        self.add_description.grid(row=self.k+4,column=1)
+
+        self.show_records_button = tk.Button(self.frame,text="Update records",command=self.saveRecords)
+        self.show_records_button.grid(row=self.k+5,column=0,pady=10)
+        back_button = tk.Button(self.frame,text="Back to screen",command=self.close_windows)
+        back_button.grid(row=self.k+5,column=1,pady=10)
+        conn = sqlite3.connect("test2.db")
+        c = conn.cursor()
+        c.execute("SELECT * FROM dish WHERE oid = "+self.delete_box.get())
+        self.showRecord = c.fetchall()
+        print(self.showRecord)
+
+        for record in self.showRecord:
+            self.add_dish.insert(0,record[0])
+            self.add_description.insert(1.0,record[1])
+        print_records = ''
+        conn.commit()
+        conn.close()
+        # self.master.withdraw()
+        # toplevel = tk.Toplevel(self.master)
+        # toplevel.geometry("450x550")
+        # app = Delete(toplevel)
+        
+    def saveRecords(self):
+        conn = sqlite3.connect("test2.db")
+        c = conn.cursor()
+        c.execute("""UPDATE dish SET
+            add_dish =:add_dish,
+            add_description =:add_description
+            WHERE oid =:oid
+            """,{
+                'add_dish':self.add_dish.get(),
+                'add_description':self.add_description.get("1.0",tk.END),
+                'oid':self.delete_box.get()
+                })
+        print(c)
+        
+        message = messagebox.askyesno("Update record","Are you want to upadte more?")
+        print(message)
+        if message ==False:
+            self.close_windows()
+        else:
+            self.add_dish.delete(0,tk.END)
+            self.add_description.delete('1.0', tk.END)
+        conn.commit()
+        conn.close()
+
+    def close_windows(self):
+        # self.master.destroy()
+        self.master.withdraw()
+        toplevel = tk.Toplevel(self.master)
+        toplevel.geometry("600x300")
+        app = Demo2(toplevel)
+    def showRecords(self):
+        conn = sqlite3.connect("test2.db")
+        c = conn.cursor()
+        c.execute("SELECT *,oid FROM dish")
+        self.showRecord = c.fetchall()
+        print(self.showRecord)
+        print_records = ''
+        k=0
+        for record in self.showRecord:
+            k=k+1
+            print_records += str(record[0]) +" "+str(record[2])  +"\n"
+
+        self.query_label = tk.Label(self.frame,text=print_records)
+        self.query_label.grid(row=1,column=0)
+        conn.commit()
+        conn.close()
 root = tk.Tk()
 root.title("window")
 
