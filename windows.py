@@ -175,12 +175,17 @@ class windowclass():
         
         #create lh_list of line_heights which size is equal to num rows of data
         for row in oid_data:
+            if '\n' in row[2]:
+                print("By")
             for datum in row:
                 word_list = datum.split()
                 number_of_words = len(word_list) #how many words
-                if number_of_words>2: #names and cities formed by 2 words like Los Angeles are ok)
+                if '\n' in row[2]:
                     use_default_height = 1
-                    new_line_height = pdf.font_size * (number_of_words/2) #new height change according to data 
+                    new_line_height = pdf.font_size * (number_of_words)
+                elif number_of_words>2: #names and cities formed by 2 words like Los Angeles are ok)
+                    use_default_height = 1
+                    new_line_height = pdf.font_size * (number_of_words) #new height change according to data 
             if not use_default_height:
                 lh_list.append(line_height)
             else:
@@ -199,7 +204,6 @@ class windowclass():
                 pdf.cell(col_width, line_height,align='L', txt="Port of discharge: "+str(self.port_discharge.get()), border=0)
             else:
                 for datum in range(len(row)):
-                    print(datum)
                     
                     line_height = lh_list[j]
                     #choose right height for current row
